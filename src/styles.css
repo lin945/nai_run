@@ -77,6 +77,8 @@ h1 span { color: #64b8b9; }
 .primary-button:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #d89352, 0 12px 23px rgba(204, 128, 67, .25); }
 .primary-button:active { transform: translateY(4px); box-shadow: 0 2px 0 #d89352; }
 .primary-button span { font-size: 24px; }
+.primary-button #start-label { font-size: inherit; }
+.primary-button:disabled { cursor: wait; opacity: .75; transform: none; box-shadow: 0 6px 0 #d89352, 0 10px 22px rgba(204, 128, 67, .25); }
 .menu-tip { margin: 20px 0 0; color: #9bacaa; font-size: 11px; font-weight: 700; }
 .menu-art { position: relative; align-self: stretch; display: grid; place-items: end center; min-width: 0; padding-right: 23px; }
 .art-halo { position: absolute; top: 52px; right: 27px; width: min(330px, 90%); aspect-ratio: 1; border: 15px solid rgba(255,255,255,.5); border-radius: 50%; background: radial-gradient(circle at 40% 40%, #fff8d8, #b7e6da 67%, transparent 68%); }

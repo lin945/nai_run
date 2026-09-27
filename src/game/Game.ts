@@ -43,13 +43,12 @@ export class Game {
   private lastFrame = 0
   private accumulator = 0
   private isNarrow = false
+  private frameRequest: number | null = null
+  private cameraNeedsResize = true
+  private sceneReady = false
 
-  constructor(root: HTMLElement) {
-    this.hud = new Hud(root, {
-      start: () => this.start(),
-      pause: () => this.togglePause(),
-      mute: () => this.toggleMute(),
-    })
+  constructor(hud: Hud) {
+    this.hud = hud
     this.sound = new Sound(scoreStore.muted())
     this.hud.setMuted(scoreStore.muted())
     this.hud.setBest(scoreStore.best())
@@ -89,12 +88,18 @@ export class Game {
     window.addEventListener('resize', () => this.resize())
     this.resize()
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden && this.phase === 'running') this.togglePause()
+      if (document.hidden) {
+        if (this.phase === 'running') this.togglePause()
+        if (this.frameRequest !== null) cancelAnimationFrame(this.frameRequest)
+        this.frameRequest = null
+      } else {
+        this.requestFrame()
+      }
     })
-    requestAnimationFrame(this.frame)
+    this.requestFrame()
   }
 
-  private start(): void {
+  start(): void {
     this.phase = 'running'
     this.targetLane = 1
     this.playerX = 0
@@ -107,21 +112,26 @@ export class Game {
     this.stars = 0
     this.score = 0
     this.accumulator = 0
+    this.lastFrame = 0
     this.world.reset(Date.now() & 0xffffffff)
+    this.world.update(0, 0, 0, 0, false, false)
     this.hud.setStats(0, 0, 0, 0, 0)
     this.hud.setPhase('running')
+    this.requestFrame()
     this.sound.play('start')
   }
 
-  private togglePause(): void {
+  togglePause(): void {
     if (this.phase === 'running') this.phase = 'paused'
     else if (this.phase === 'paused') this.phase = 'running'
     else return
     this.accumulator = 0
+    this.lastFrame = 0
     this.hud.setPhase(this.phase)
+    this.requestFrame()
   }
 
-  private toggleMute(): void {
+  toggleMute(): void {
     const muted = !scoreStore.muted()
     scoreStore.setMuted(muted)
     this.sound.setMuted(muted)
@@ -200,8 +210,15 @@ export class Game {
     }
   }
 
+  private requestFrame(): void {
+    if (this.frameRequest === null && !document.hidden) {
+      this.frameRequest = requestAnimationFrame(this.frame)
+    }
+  }
+
   private frame = (now: number): void => {
-    const dt = this.lastFrame ? Math.min((now - this.lastFrame) / 1000, 0.05) : 0
+    this.frameRequest = null
+    const dt = this.phase === 'running' && this.lastFrame ? Math.min((now - this.lastFrame) / 1000, 0.05) : 0
     this.lastFrame = now
     if (this.phase === 'running') {
       this.accumulator += dt
@@ -228,14 +245,20 @@ export class Game {
       magnet: this.magnetRemaining > 0,
     })
     const cameraX = this.playerX * (this.isNarrow ? 0.72 : 0.28) + 0.35
-    this.camera.position.x += (cameraX - this.camera.position.x) * Math.min(1, dt * 2.7)
-    this.camera.position.y += ((this.isNarrow ? 6.0 : 5.2) + this.jumpY * 0.13 - this.camera.position.y) * Math.min(1, dt * 2)
-    this.camera.position.z += ((this.isNarrow ? 18.8 : 16) - this.camera.position.z) * Math.min(1, dt * 2)
+    const horizontalBlend = this.cameraNeedsResize ? 1 : Math.min(1, dt * 2.7)
+    const viewBlend = this.cameraNeedsResize ? 1 : Math.min(1, dt * 2)
+    this.camera.position.x += (cameraX - this.camera.position.x) * horizontalBlend
+    this.camera.position.y += ((this.isNarrow ? 6.0 : 5.2) + this.jumpY * 0.13 - this.camera.position.y) * viewBlend
+    this.camera.position.z += ((this.isNarrow ? 18.8 : 16) - this.camera.position.z) * viewBlend
     this.cameraTarget.set(this.playerX * (this.isNarrow ? 0.59 : 0.22), 1.2, PLAYER_Z - 24)
     this.camera.lookAt(this.cameraTarget)
     const targetFov = (this.isNarrow ? 66 : 58) + (this.boostRemaining > 0 ? 4 : 0)
-    this.camera.fov += (targetFov - this.camera.fov) * Math.min(1, dt * 2)
-    if (Math.abs(targetFov - this.camera.fov) > 0.02) this.camera.updateProjectionMatrix()
+    const nextFov = this.camera.fov + (targetFov - this.camera.fov) * viewBlend
+    if (Math.abs(nextFov - this.camera.fov) > 0.001) {
+      this.camera.fov = nextFov
+      this.camera.updateProjectionMatrix()
+    }
+    this.cameraNeedsResize = false
     this.hud.setStats(
       this.distance,
       this.stars,
@@ -244,7 +267,12 @@ export class Game {
       this.magnetRemaining / MAGNET_SECONDS,
     )
     this.renderer.render(this.scene, this.camera)
-    requestAnimationFrame(this.frame)
+    if (!this.sceneReady) {
+      this.sceneReady = true
+      this.hud.setLoading(false)
+      performance.mark('nai-game-ready')
+    }
+    if (this.phase === 'running') this.requestFrame()
   }
 
   private resize(): void {
@@ -255,5 +283,7 @@ export class Game {
     this.renderer.setSize(width, height)
     this.camera.aspect = width / height
     this.camera.updateProjectionMatrix()
+    this.cameraNeedsResize = true
+    this.requestFrame()
   }
 }
