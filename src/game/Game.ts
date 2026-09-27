@@ -216,13 +216,13 @@ export class Game {
 
     const speed = runningSpeed(this.distance, this.boostRemaining > 0)
     const lean = Math.max(-1, Math.min(1, (LANE_X[this.targetLane] - this.playerX) / 2.7))
-    this.player.update(dt, {
+    this.player.update(this.phase === 'paused' ? 0 : dt, {
       x: this.playerX,
       jumpY: this.jumpY,
       rolling: this.rollRemaining > 0,
       rollProgress: this.rollRemaining > 0 ? 1 - this.rollRemaining / ROLL_SECONDS : 0,
       lean,
-      running: this.phase === 'running',
+      running: this.phase === 'running' || this.phase === 'paused',
       dead: this.phase === 'gameover',
       speed,
       magnet: this.magnetRemaining > 0,
