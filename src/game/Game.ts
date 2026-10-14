@@ -58,28 +58,32 @@ export class Game {
 
     const scene = new THREE.Scene()
     this.scene = scene
-    scene.background = new THREE.Color('#97dce9')
-    scene.fog = new THREE.Fog('#a7e4e9', 75, 205)
-    scene.add(new THREE.HemisphereLight('#fff6df', '#8bc6be', 2.3))
-    const sun = new THREE.DirectionalLight('#fff8dd', 2.2)
-    sun.position.set(-18, 30, -30)
+    scene.background = new THREE.Color('#b5cbd7')
+    scene.fog = new THREE.Fog('#b5cbd7', 65, 215)
+    scene.add(new THREE.HemisphereLight('#dce9f2', '#777568', 1.65))
+    const sun = new THREE.DirectionalLight('#fff1d6', 2.5)
+    sun.position.set(-24, 35, 12)
     sun.castShadow = true
     sun.shadow.mapSize.set(1024, 1024)
-    sun.shadow.camera.left = -19
-    sun.shadow.camera.right = 19
-    sun.shadow.camera.top = 26
-    sun.shadow.camera.bottom = -12
+    sun.shadow.camera.left = -32
+    sun.shadow.camera.right = 32
+    sun.shadow.camera.top = 65
+    sun.shadow.camera.bottom = -35
     sun.shadow.camera.near = 0.5
-    sun.shadow.camera.far = 110
+    sun.shadow.camera.far = 160
+    sun.shadow.bias = -0.0003
+    sun.shadow.normalBias = 0.04
     scene.add(sun)
 
     this.camera = new THREE.PerspectiveCamera(58, 1, 0.1, 270)
     this.camera.position.set(0.5, 5.1, 16)
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping
+    this.renderer.toneMappingExposure = 1.05
     this.renderer.shadowMap.enabled = true
     this.renderer.shadowMap.type = THREE.PCFShadowMap
-    this.renderer.domElement.setAttribute('aria-label', '奶龙快跑游戏区域')
+    this.renderer.domElement.setAttribute('aria-label', '奶娃快跑游戏区域')
     this.hud.stage.append(this.renderer.domElement)
     this.world = new World(scene)
     this.player = new Player(scene)

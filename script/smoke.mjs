@@ -6,7 +6,9 @@ const url = process.env.NAI_RUN_URL || 'http://127.0.0.1:5173/'
 await mkdir('log', { recursive: true })
 
 const browser = await chromium.launch({
-  channel: 'chrome',
+  ...(process.env.NAI_RUN_BROWSER_PATH
+    ? { executablePath: process.env.NAI_RUN_BROWSER_PATH }
+    : process.env.NAI_RUN_BROWSER_CHANNEL ? { channel: process.env.NAI_RUN_BROWSER_CHANNEL } : {}),
   headless: true,
   args: ['--enable-webgl', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
 })
@@ -17,6 +19,8 @@ async function newPage(options) {
   const page = await context.newPage()
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto(url, { waitUntil: 'networkidle' })
+  await page.locator('canvas').waitFor()
+  await page.locator('#start-button:not([disabled])').waitFor()
   return { context, page }
 }
 
@@ -39,7 +43,9 @@ try {
   assert.equal(await desktop.page.locator('#pause-panel.visible').count(), 1, '键盘应暂停游戏')
   await desktop.page.getByRole('button', { name: /继续奔跑/ }).click()
   assert.equal(await desktop.page.locator('#pause-panel.visible').count(), 0, '暂停后可继续')
-  await desktop.page.locator('#gameover-panel.visible').waitFor({ timeout: 20_000 })
+  // The first right-lane car guarantees a collision without relying on random rows.
+  await desktop.page.keyboard.press('ArrowRight')
+  await desktop.page.locator('#gameover-panel.visible').waitFor({ timeout: 60_000 })
   await desktop.page.screenshot({ path: 'log/desktop-gameover.png' })
   await desktop.page.getByRole('button', { name: /再跑一次/ }).click()
   assert.equal(await desktop.page.locator('#gameover-panel.visible').count(), 0, '失败后可重开')

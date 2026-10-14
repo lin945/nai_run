@@ -4,18 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
     <meta name="theme-color" content="#85d7e9" />
-    <meta name="description" content="奶龙快跑：在缤纷的三车道世界里奔跑、跳跃、翻滚，收集星星！" />
+    <meta name="description" content="奶娃快跑：在缤纷的三车道世界里奔跑、跳跃、翻滚，收集星星！" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="/src/styles.css" />
-    <title>奶龙快跑 · 星光大冒险</title>
+    <title>奶娃快跑 · 星光大冒险</title>
   </head>
   <body>
     <div id="app">
       <main class="shell">
-        <div class="stage" id="game-stage" aria-label="奶龙快跑 3D 游戏画面"></div>
+        <div class="stage" id="game-stage" aria-label="奶娃快跑 3D 游戏画面"></div>
         <div class="stage-vignette" aria-hidden="true"></div>
         <header class="hud-top">
-          <div class="brand"><span class="brand-mark">★</span><span>奶龙<span class="brand-light">快跑</span></span></div>
+          <div class="brand"><span class="brand-mark">★</span><span>奶娃<span class="brand-light">快跑</span></span></div>
           <div class="stats" aria-live="off">
             <div class="stat"><small>距离</small><strong id="distance-value">0 <em>m</em></strong></div>
             <div class="stat stat-primary"><small>分数</small><strong id="score-value">0</strong></div>
@@ -37,14 +37,14 @@
         <section class="overlay visible" id="ready-panel" aria-labelledby="ready-title">
           <div class="menu-card">
             <div class="menu-copy">
-              <p class="eyebrow">THE LITTLE DRAGON RUN</p>
-              <h1 id="ready-title">奶龙<span>快跑！</span></h1>
-              <p class="subtitle">奔向星光，跑过缤纷街道。<br />准备好和奶龙一起出发了吗？</p>
+              <p class="eyebrow">NAIWA RUN</p>
+              <h1 id="ready-title">奶娃<span>快跑！</span></h1>
+              <p class="subtitle">奔向星光，跑过缤纷街道。<br />准备好和奶娃一起出发了吗？</p>
               <div class="best-line">个人最高分 <strong class="best-value">0</strong></div>
               <button class="primary-button" id="start-button" type="button" disabled aria-busy="true"><span id="start-label">准备赛道…</span> <span id="start-arrow" hidden>➜</span></button>
               <p class="menu-tip" id="ready-tip" role="status">尖刺 / 货箱要跳跃，横梁 / 闸门要翻滚<br />越跑越快，注意三车道挑战！</p>
             </div>
-            <div class="menu-art"><div class="art-halo"></div><img id="ready-character" src="/res/review.png" width="192" height="208" fetchpriority="high" decoding="async" alt="奶龙角色" /></div>
+            <div class="menu-art"><div class="art-halo"></div><img id="ready-character" src="/res/review.png" width="192" height="208" fetchpriority="high" decoding="async" alt="奶娃角色" /></div>
           </div>
         </section>
 

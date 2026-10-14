@@ -5,3 +5,15 @@
 .env
 .env.*
 !.env.example
+/.dev.vars
+/.dev.vars.*
+/.vite/
+/coverage/
+.DS_Store
+Thumbs.db
+*.log
+*.pem
+*.key
+*.p12
+*.pfx
+/.npmrc

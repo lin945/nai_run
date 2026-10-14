@@ -1,6 +1,6 @@
-# 奶龙快跑：3D 网页跑酷游戏可行性分析
+# 奶娃快跑：3D 网页跑酷游戏可行性分析
 
-> 版本：2026-09-26。本文记录立项时的可行性与范围判断；当前本地实现进度见 [实施任务](./tasks.md)。远端仓库和正式部署仍待接入。
+> 历史版本：2026-09-26。本文保留立项时的可行性与范围判断，不代表当前状态；实现进度见 [实施任务](./tasks.md)。原个人部署地址已替换为 `example.com` 示例，文中的 DNS 和账户描述是当时的记录，不应对示例域名执行操作。
 
 ## 1. 结论与前提
 
@@ -17,7 +17,7 @@
 | 代码 | 当前没有游戏源码、构建配置或 Worker 配置 | 可以从简洁结构起步 |
 | 角色参考 | `res/` 有 12 张 PNG/WebP；包含待机、奔跑、跳跃、方向和表情等参考 | 可指导造型与 UI；缺少背面视角、完整翻滚动作和 3D 模型 |
 | Git | 本地仓库尚无提交、未设置远端；参考图与 IDE 文件已经在暂存区 | 后续建私有仓库时需核对现有暂存内容，不覆盖原文件 |
-| 域名 | 已确认目标为 `https://nai.bilibili.asia/`；本机 DNS 查询时仍返回“名称不存在” | 绑定前需确认 `bilibili.asia` 的 Cloudflare Zone 管理权限；不改动 `map.bilibili.asia` |
+| 域名 | 已确认目标为 `https://game.example.com/`；本机 DNS 查询时仍返回“名称不存在” | 绑定前需确认 `example.com` 的 Cloudflare Zone 管理权限；不改动 `other.example.com` |
 
 目录约定：`docs/` 存文档；`log/` 存本地运行、构建或排错日志，目录保留但内容不提交；`script/` 存辅助脚本；`res/` 保留原始参考素材。正式上线使用的压缩模型和贴图放在构建资源目录，避免把所有参考图随游戏加载。
 
@@ -90,7 +90,7 @@ wrangler.jsonc           Workers 静态资源与域名配置（实施时创建�
 1. 完成可运行游戏后，核对当前暂存文件与素材授权，再创建 GitHub **私有仓库**并推送。当前本地尚无远端，不能把已推送当作既成事实。
 2. Vite 构建产物放入 `dist/`，由 Workers Static Assets 分发；单页游戏按 SPA 路由配置。可先用 `workers.dev` 验证，再绑定正式域名。[Static Assets](https://developers.cloudflare.com/workers/static-assets/)、[SPA 路由](https://developers.cloudflare.com/workers/static-assets/routing/single-page-application/)
 3. 可连接 GitHub 仓库使用 Workers Builds，在选定分支提交后自动构建和部署；Cloudflare GitHub App 仅授权目标仓库。[Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/)、[GitHub 集成](https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/github-integration/)
-4. 正式域名已确认为 `nai.bilibili.asia`。若 `bilibili.asia` 在可操作的 Cloudflare Zone 内，可作为 Worker Custom Domain 绑定；Cloudflare 会创建对应 DNS 与证书。当前本机尚查不到 `nai` 的 DNS 记录，部署时以实际绑定和 HTTPS 访问验证为准；`map.bilibili.asia` 不在本项目操作范围。[Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
+4. 正式域名已确认为 `game.example.com`。若 `example.com` 在可操作的 Cloudflare Zone 内，可作为 Worker Custom Domain 绑定；Cloudflare 会创建对应 DNS 与证书。当前本机尚查不到 `nai` 的 DNS 记录，部署时以实际绑定和 HTTPS 访问验证为准；`other.example.com` 不在本项目操作范围。[Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
 
 ## 9. 开源实现参考
 
@@ -108,7 +108,7 @@ wrangler.jsonc           Workers 静态资源与域名配置（实施时创建�
 | 随机障碍可能不可通行 | 影响游戏公平性 | 生成前验证安全路径，保留可复现随机种子 |
 | 手机 GPU 与浏览器差异 | 影响帧率和可玩性 | 早期真机测试，分级画质与对象复用 |
 | 角色形象和素材的公开发布权限 | 影响公开网站发布 | 上线前确认使用权及素材来源；私有源码仓库不等于网站私有 |
-| `nai.bilibili.asia` 当前未解析 | 影响最终域名绑定 | 目标域名已确认；发布时核对 Zone 管理权、Custom Domain 绑定、DNS 与 HTTPS |
+| `game.example.com` 当前未解析 | 影响最终域名绑定 | 目标域名已确认；发布时核对 Zone 管理权、Custom Domain 绑定、DNS 与 HTTPS |
 | 后续排行榜信任边界 | 客户端分数易伪造 | 在线榜单阶段增加账号/会话、频率限制和成绩校验；首版只做本地成绩 |
 
 **建议顺序：**

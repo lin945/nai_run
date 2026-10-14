@@ -7,7 +7,9 @@ const report = { url, checkedAt: new Date().toISOString(), checks: [], pageError
 await mkdir('log', { recursive: true })
 
 const browser = await chromium.launch({
-  channel: 'chrome',
+  ...(process.env.NAI_RUN_BROWSER_PATH
+    ? { executablePath: process.env.NAI_RUN_BROWSER_PATH }
+    : process.env.NAI_RUN_BROWSER_CHANNEL ? { channel: process.env.NAI_RUN_BROWSER_CHANNEL } : {}),
   headless: true,
   args: ['--enable-webgl', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
 })

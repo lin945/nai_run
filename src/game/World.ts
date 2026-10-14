@@ -209,12 +209,13 @@ function makeBonus(kind: 'boost' | 'magnet'): THREE.Group {
 function disposeMeshes(root: THREE.Object3D): void {
   root.traverse((child) => {
     if (child instanceof THREE.Mesh) child.geometry.dispose()
+    if (child instanceof THREE.InstancedMesh) child.dispose()
   })
 }
 
 export class World {
   private readonly root = new THREE.Group()
-  private readonly track: THREE.Group[] = []
+  private readonly track: { distance: number; group: THREE.Group }[] = []
   private rows: RowVisual[] = []
   private random: Random = seededRandom(1)
   private nextRowDistance = 34
@@ -225,15 +226,15 @@ export class World {
 
   constructor(scene: THREE.Scene) {
     scene.add(this.root)
-    const grass = new THREE.Mesh(new THREE.PlaneGeometry(420, 440), material('#95cf9a'))
+    const grass = new THREE.Mesh(new THREE.PlaneGeometry(420, 440), material('#87917f'))
     grass.rotation.x = -Math.PI / 2
     grass.position.set(0, -0.29, -90)
     grass.receiveShadow = true
     this.root.add(grass)
 
-    for (let index = 0; index < 11; index += 1) {
+    for (let index = 0; index < 13; index += 1) {
       const segment = this.makeSegment(index)
-      this.track.push(segment)
+      this.track.push({ distance: index * 20 - 4, group: segment })
       this.root.add(segment)
     }
     for (const [x, y, z, size] of [
@@ -249,6 +250,14 @@ export class World {
   }
 
   reset(seed: number): void {
+    for (let index = 0; index < this.track.length; index += 1) {
+      const segment = this.track[index]
+      this.root.remove(segment.group)
+      disposeMeshes(segment.group)
+      segment.distance = index * 20 - 4
+      segment.group = this.makeSegment(index)
+      this.root.add(segment.group)
+    }
     for (const row of this.rows) {
       this.root.remove(row.group)
       disposeMeshes(row.group)
@@ -271,8 +280,17 @@ export class World {
     magnet: boolean,
   ): WorldResult {
     this.time += dt
-    for (let index = 0; index < this.track.length; index += 1) {
-      this.track[index].position.z = PLAYER_Z + 4 - index * 20 + (distance % 20)
+    for (const segment of this.track) {
+      // Recycle only after the entire block has passed behind the camera.
+      if (segment.distance < distance - 32) {
+        const cycles = Math.ceil((distance - 32 - segment.distance) / (this.track.length * 20))
+        segment.distance += cycles * this.track.length * 20
+        this.root.remove(segment.group)
+        disposeMeshes(segment.group)
+        segment.group = this.makeSegment(Math.round((segment.distance + 4) / 20))
+        this.root.add(segment.group)
+      }
+      segment.group.position.z = PLAYER_Z + distance - segment.distance
     }
     while (this.nextRowDistance < distance + VIEW_DISTANCE) {
       this.addRow(this.nextRowDistance)
@@ -354,30 +372,86 @@ export class World {
 
   private makeSegment(index: number): THREE.Group {
     const group = new THREE.Group()
-    block(group, '#ddba8d', [0, -0.18, 0], [TRACK_WIDTH + 0.55, 0.28, 20])
-    for (let lane = 0; lane < 3; lane += 1) {
-      block(group, lane === 1 ? '#f8e3bb' : '#f5dcb0', [LANE_X[lane], -0.015, 0], [3.05, 0.055, 19.95])
-    }
+    group.userData.streetIndex = index
+    const random = seededRandom(index * 7919 + 41)
+    block(group, '#596169', [0, -0.13, 0], [TRACK_WIDTH + 0.55, 0.28, 20])
     for (const x of [-1.6, 1.6]) {
       for (const z of [-7, -2, 3, 8]) {
-        block(group, '#fff7df', [x, 0.02, z], [0.12, 0.025, 2.2])
+        block(group, '#e9e6dc', [x, 0.02, z], [0.12, 0.025, 2.2])
       }
     }
+    for (const side of [-1, 1]) block(group, '#e3d7aa', [side * 5.1, 0.02, 0], [0.09, 0.025, 20])
     for (const side of [-1, 1]) {
-      block(group, '#e3a9a8', [side * 5.58, 0.13, 0], [0.58, 0.5, 20])
-      block(group, '#ffe6c4', [side * 6.45, 0.01, 0], [1.15, 0.16, 20])
-      for (const z of [-7, 5]) {
-        const x = side * (8.9 + (index % 3) * 0.8)
-        block(group, '#7caa8e', [x, 0.78, z], [0.38, 1.6, 0.38])
-        ball(group, index % 2 === 0 ? '#90c69f' : '#f0b9ad', [x, 2.23, z], [1.4, 1.45, 1.22])
+      block(group, '#a9aaa6', [side * 5.48, 0.08, 0], [0.32, 0.3, 20])
+      block(group, '#bfc0b8', [side * 7.05, 0.07, 0], [2.85, 0.27, 20])
+      for (const z of [-8, -4, 0, 4, 8]) {
+        block(group, '#a7aaa5', [side * 7.05, 0.215, z], [2.7, 0.012, 0.035])
       }
-      const buildingX = side * (15 + (index % 2) * 3)
-      const buildingHeight = 7 + ((index * 7) % 5)
-      block(group, index % 2 ? '#f4bfaf' : '#b9d7d5', [buildingX, buildingHeight / 2 - 0.2, -1], [6, buildingHeight, 7])
-      for (const y of [2.5, 5.2, 7.9]) {
-        if (y > buildingHeight - 0.7) continue
-        block(group, '#fff1c7', [buildingX - side * 3.04, y, -1], [0.04, 0.8, 3.8])
+      const lampX = side * 6.05
+      block(group, '#414b50', [lampX, 2.95, -7], [0.13, 5.5, 0.13])
+      block(group, '#414b50', [lampX - side * 0.5, 5.65, -7], [1.1, 0.12, 0.13])
+      block(group, '#dce0d4', [lampX - side * 1.0, 5.58, -7], [0.52, 0.14, 0.3])
+      block(group, '#737b73', [side * 7.25, 0.36, 4], [1.7, 0.38, 2.6])
+      block(group, '#4f6548', [side * 7.25, 0.57, 4], [1.5, 0.05, 2.4])
+      block(group, '#73634f', [side * 7.25, 1.6, 4], [0.25, 2.2, 0.25])
+      for (const [x, y, z, radius] of [[0, 3.25, 0, 1], [0.5, 2.8, 0.3, 0.8], [-0.4, 2.9, -0.4, 0.9]]) {
+        ball(group, '#597554', [side * 7.25 + x, y, 4 + z], [radius, radius * 1.2, radius])
       }
+      for (const z of [-5, 5]) {
+        const floors = 2 + Math.floor(random() * 4)
+        const height = floors * 2.75 + 3.2
+        const facade = ['#b6ab98', '#acb3b1', '#c4b9a8', '#9cabae'][Math.floor(random() * 4)]
+        const buildingX = side * 12.1
+        const faceX = side * 8.55
+        block(group, facade, [buildingX, height / 2 + 0.2, z], [7, height, 9.65])
+        block(group, '#737d80', [buildingX, height + 0.25, z], [7.2, 0.22, 9.8])
+        block(group, '#616c70', [buildingX + side, height + 0.65, z + 1], [1.7, 0.65, 2.1])
+        for (let floor = 0; floor < floors; floor += 1) {
+          const y = 4.7 + floor * 2.75
+          block(group, '#8c918a', [faceX, y - 1.0, z], [0.18, 0.15, 9.65])
+          for (const offset of [-3.15, -1.05, 1.05, 3.15]) {
+            block(group, '#e1ded2', [faceX - side * 0.06, y, z + offset], [0.16, 1.85, 1.48])
+            block(group, '#536e7a', [faceX - side * 0.16, y, z + offset], [0.06, 1.57, 1.22])
+            block(group, '#a0b3b7', [faceX - side * 0.2, y + 0.48, z + offset], [0.02, 0.08, 1.2])
+            block(group, '#d9d8cc', [faceX - side * 0.23, y - 0.89, z + offset], [0.35, 0.13, 1.65])
+          }
+        }
+        const awning = ['#526e67', '#8c5d4e', '#485c74'][Math.floor(random() * 3)]
+        block(group, '#454e50', [faceX - side * 0.05, 1.52, z], [0.16, 2.5, 8.6])
+        for (const offset of [-2.9, 0, 2.9]) {
+          block(group, '#739198', [faceX - side * 0.15, 1.6, z + offset], [0.05, 2.15, 2.45])
+          block(group, '#c0c8c4', [faceX - side * 0.2, 1.6, z + offset], [0.04, 2.2, 0.08])
+        }
+        block(group, awning, [faceX - side * 0.53, 2.99, z], [1.25, 0.19, 8.9])
+        block(group, awning, [faceX - side * 1.08, 2.8, z], [0.13, 0.43, 8.9])
+        block(group, '#d6d4c8', [faceX - side * 0.12, 0.36, z], [0.25, 0.3, 9.65])
+      }
+    }
+    // Batch the facade details so richer streets do not multiply draw calls.
+    const batches = new Map<THREE.Material, THREE.Mesh[]>()
+    for (const child of [...group.children]) {
+      if (child instanceof THREE.Mesh && child.geometry.type === 'BoxGeometry') {
+        const mat = child.material as THREE.Material
+        const batch = batches.get(mat) ?? []
+        batch.push(child)
+        batches.set(mat, batch)
+      }
+    }
+    for (const [mat, meshes] of batches) {
+      const instances = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), mat, meshes.length)
+      meshes.forEach((mesh, i) => {
+        const bounds = mesh.geometry as THREE.BoxGeometry
+        mesh.scale.set(bounds.parameters.width, bounds.parameters.height, bounds.parameters.depth)
+        mesh.updateMatrix()
+        instances.setMatrixAt(i, mesh.matrix)
+        group.remove(mesh)
+        mesh.geometry.dispose()
+      })
+      instances.castShadow = true
+      instances.receiveShadow = true
+      instances.instanceMatrix.needsUpdate = true
+      instances.computeBoundingSphere()
+      group.add(instances)
     }
     return group
   }
