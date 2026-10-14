@@ -9,7 +9,7 @@ import {
   type PickupKind,
   type RowPattern,
 } from './config'
-import { generateRow, isHazardFatal, overlapsLane, seededRandom, type Random } from './rules'
+import { generateRow, isHazardFatal, overlapsLane, rowSpacing, seededRandom, type Random } from './rules'
 
 interface Collectible {
   kind: PickupKind
@@ -131,6 +131,38 @@ function makeBeam(): THREE.Group {
   return group
 }
 
+function makeNewHazard(kind: 'spikes' | 'crate' | 'gate'): THREE.Group {
+  const group = new THREE.Group()
+  if (kind === 'spikes') {
+    block(group, '#554d69', [0, 0.12, 0], [2.5, 0.24, 1.15])
+    for (const x of [-0.9, -0.3, 0.3, 0.9]) {
+      for (const z of [-0.3, 0.3]) {
+        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.85, 6), material('#c6d8e5'))
+        spike.position.set(x, 0.65, z)
+        spike.castShadow = true
+        group.add(spike)
+      }
+    }
+    block(group, '#ffcc54', [0, 0.14, 0.59], [2.45, 0.16, 0.04])
+  } else if (kind === 'crate') {
+    block(group, '#b77a46', [0, 0.68, 0], [2.15, 1.36, 1.35])
+    for (const x of [-0.92, 0.92]) block(group, '#f3cc8e', [x, 0.68, 0.7], [0.16, 1.36, 0.07])
+    for (const y of [0.12, 1.24]) block(group, '#f3cc8e', [0, y, 0.7], [2.15, 0.18, 0.07])
+    block(group, '#f3cc8e', [0, 0.68, 0.72], [0.16, 1.5, 0.07]).rotation.z = -0.85
+  } else {
+    for (const x of [-1.18, 1.18]) block(group, '#566487', [x, 1.55, 0], [0.22, 3.1, 0.5])
+    block(group, '#66799d', [0, 2.32, 0], [2.45, 1.55, 0.65])
+    for (const x of [-0.8, -0.4, 0, 0.4, 0.8]) {
+      block(group, '#ffd460', [x, 1.66, 0.35], [0.18, 0.24, 0.05]).rotation.z = -0.45
+    }
+    // Bright downward chevrons signal that this obstacle requires a roll.
+    for (const x of [-0.16, 0.16]) {
+      block(group, '#d7f9fa', [x, 2.45, 0.35], [0.12, 0.5, 0.05]).rotation.z = x < 0 ? 0.65 : -0.65
+    }
+  }
+  return group
+}
+
 function makeStar(): THREE.Group {
   const group = new THREE.Group()
   const shape = new THREE.Shape()
@@ -188,6 +220,7 @@ export class World {
   private nextRowDistance = 34
   private previousSafeLane: Lane = 1
   private rowCount = 0
+  private previousChallenge = false
   private time = 0
 
   constructor(scene: THREE.Scene) {
@@ -225,6 +258,7 @@ export class World {
     this.nextRowDistance = 34
     this.previousSafeLane = 1
     this.rowCount = 0
+    this.previousChallenge = false
     this.time = 0
   }
 
@@ -242,7 +276,7 @@ export class World {
     }
     while (this.nextRowDistance < distance + VIEW_DISTANCE) {
       this.addRow(this.nextRowDistance)
-      this.nextRowDistance += 31 + this.random() * 7
+      this.nextRowDistance += rowSpacing(this.nextRowDistance, this.random)
     }
 
     const result: WorldResult = { collected: [], crashed: false }
@@ -282,10 +316,11 @@ export class World {
   private addRow(distance: number): void {
     const pattern: RowPattern = this.rowCount === 0
       ? { safeLane: 1, obstacles: [{ lane: 0, kind: 'barrier' }, { lane: 2, kind: 'car' }], bonus: 'magnet' }
-      : generateRow(this.previousSafeLane, this.random)
+      : generateRow(this.previousSafeLane, this.random, distance, !this.previousChallenge)
     if (this.rowCount === 2) pattern.bonus = 'boost'
     this.rowCount += 1
     this.previousSafeLane = pattern.safeLane
+    this.previousChallenge = pattern.obstacles.some((obstacle) => obstacle.lane === pattern.safeLane)
     const group = new THREE.Group()
     const collectibles: Collectible[] = []
     for (const obstacle of pattern.obstacles) {
@@ -295,7 +330,9 @@ export class World {
           ? makeRival()
           : obstacle.kind === 'barrier'
             ? makeBarrier()
-            : makeBeam()
+            : obstacle.kind === 'beam'
+              ? makeBeam()
+              : makeNewHazard(obstacle.kind)
       mesh.position.x = LANE_X[obstacle.lane]
       group.add(mesh)
     }

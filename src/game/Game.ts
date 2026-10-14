@@ -12,7 +12,7 @@ import {
 } from './config'
 import { Input, type Action } from './Input'
 import { Player } from './Player'
-import { moveLane, runningSpeed, totalScore } from './rules'
+import { difficultyLevel, moveLane, runningSpeed, totalScore } from './rules'
 import { Sound } from './Sound'
 import { World } from './World'
 import { scoreStore } from '../platform/scoreStore'
@@ -39,6 +39,7 @@ export class Game {
   private magnetRemaining = 0
   private distance = 0
   private stars = 0
+  private difficulty = 1
   private score = 0
   private lastFrame = 0
   private accumulator = 0
@@ -110,6 +111,7 @@ export class Game {
     this.magnetRemaining = 0
     this.distance = 0
     this.stars = 0
+    this.difficulty = 1
     this.score = 0
     this.accumulator = 0
     this.lastFrame = 0
@@ -164,6 +166,11 @@ export class Game {
     this.rollRemaining = Math.max(0, this.rollRemaining - dt)
     const speed = runningSpeed(this.distance, this.boostRemaining > 0)
     this.distance += speed * dt
+    const level = difficultyLevel(this.distance)
+    if (level > this.difficulty) {
+      this.difficulty = level
+      this.hud.flash(['', '', '难度升级 · 障碍更密集！', '难度升级 · 注意连续换道！', '极限挑战 · 保持专注！'][level])
+    }
     this.playerX += (LANE_X[this.targetLane] - this.playerX) * Math.min(1, dt * 12)
 
     if (this.jumpVelocity !== 0 || this.jumpY > 0) {
